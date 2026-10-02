@@ -1,0 +1,55 @@
+[project]
+name = "snp-data-management"
+version = "0.1.0"
+description = "Code for the processing of Camera Trap videos collected in the Swiss National Park"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "ffmpeg-python>=0.2.0",
+    "humanfriendly>=10.0",
+    "opencv-python>=4.11.0.86",
+    "pandas>=2.2.3",
+    "supervision>=0.27",
+    "pytorchwildlife==1.2.2",
+    "tqdm>=4.67.1",
+    "setuptools<81",
+    "scikit-learn>=1.7.1",
+    "ultralytics>=8.4",
+    "cvat-cli" # Needs to match cvat server version
+]
+
+[tool.setuptools.packages.find]
+include = ["data_processing", "data_processing.*", "visualization"]
+
+[project.optional-dependencies]
+dev = [
+    "black>=24.3",
+    "isort>=5.13",
+    "pre-commit>=3.7"
+]
+
+[tool.black]
+line-length = 88
+
+[tool.isort]
+profile = "black"
+line_length = 88
+
+[build-system]
+requires = ["setuptools<81"]
+build-backend = "setuptools.build_meta"
+
+[tool.uv]
+# pytorchwildlife pins supervision==0.23.0
+override-dependencies = [
+    "supervision>=0.27",
+]
+
+[dependency-groups]
+dev = [
+    "black>=25.1.0",
+    "ipykernel>=6.29.5",
+    "isort>=6.0.1",
+    "pre-commit>=4.3.0",
+    "pytest-cov>=7.0.0",
+]

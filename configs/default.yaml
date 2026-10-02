@@ -1,0 +1,189 @@
+# Default configuration file
+global:
+  description: "Default config file"
+  project_path: "./project"     # update to the path where you want output to be saved
+  raw_videos_folder: "./videos" # update to the path to your videos
+
+# Step 1
+raw_video_parser:
+  event_time_period_s: 300      # 5 min inactivity gap splits a new event
+
+# Step 2
+process_videos_sparse_detection:
+  model: "MDV6-yolov10-e"
+  stride: 30                    # run detector every 30 frames before trimming
+  json_confidence_threshold: 0.2
+  n_cores: 2
+  batch_size: 8
+  skip_existing: false
+  output_json_folder_name: "detections_sparse_json"
+  force_frame_folder_deletion: true
+  detector_label_map:           # This may change depending on which MegaDetector model you use. Double check before
+    "0": "animal"
+    "1": "person"
+    "2": "vehicle"
+
+# Step 2b
+flag_false_positive_videos:     # Optional
+  iou_threshold: 0.8
+  min_events: 2
+  n_cores: 2
+  skip_existing: false
+  output_json_folder_name: "detections_filtered_json"
+  output_video_folder_name: "false_positive_videos"
+  output_csv_filename: "false_positive_examination.csv"
+
+# Step 2c
+process_false_positive_videos_correction: # Optional
+
+# Step 3
+trimmed_from_detection:
+  skip_trimming: false         # true: keep full videos, only filter them
+  min_detection_threshold: 0.2
+  min_frames: 15              
+  skip_existing: false
+  frame_padding: 15
+  human_conf_threshold: 0.8
+  save_videos: true
+  debug_n_videos: null
+  output_video_folder_name: "trimmed_videos"
+
+# Step 4
+process_videos_dense_detection:
+  model: "MDV6-yolov10-e"
+  json_confidence_threshold: 0.15 # also the lowest confidence seen by the tracker
+  n_cores: 2
+  batch_size: 8
+  skip_existing: false
+  output_json_folder_name: "trimmed_detections_json"
+  force_frame_folder_deletion: true
+  detector_label_map:
+    "0": "animal"
+    "1": "person"
+    "2": "vehicle"
+
+# Step 5
+process_videos_tracking:  # parameters tuned on MammAlps-S2
+  track_activation_threshold: 0.60
+  detection_threshold: 0.35
+  minimum_matching_threshold_first_associations: 0.95 # Higher values are more permissive
+  minimum_matching_threshold_second_associations: 0.65 # Higher values are more permissive
+  buffer_scale: 0.18 # boxes are enlarged by this fraction of their size for matching --> C-BIoU, Yang et al. 2023
+  lost_track_buffer: 300
+  backward_extension_max_gap: 30 # frames, null disables the backward extension of track starts
+  interpolate_missing: true
+  smooth_tracks: true
+  smoothing_period: 5
+  skip_existing: false
+  output_json_folder_name: "tracking_trimmed_json"
+
+# Step 6
+prepare_videos_for_tracking_examination:
+  visualization_type: "tracking"
+  skip_existing: false
+  n_cores: 2
+  output_video_folder_name: "trimmed_tracking_viz"
+  output_csv_filename: "tracking_examination.csv"
+
+# Step 7
+prepare_videos_for_cvat_track_correction:
+  video_scale_factor: 0.7
+  skip_existing: false
+  output_xml_folder_name: "cvat_tracks_xml"
+  output_video_folder_name: "cvat_tracks_videos"
+  output_csv_filename: "cvat_correction.csv"
+
+# Correct tracks on CVAT and download the corrections from the bash scripts
+
+# Step 8
+process_tracking_corrections_from_cvat:
+  input_xml_folder_name: "corrected_cvat_tracks_xml"
+  output_json_folder_name: "corrected_tracks_json"
+
+# Step 9
+generate_tublets_from_tracking:
+  skip_existing: false
+  output_video_folder_name: "tracklets"
+  tublet_height: 380
+  tublet_width: 380
+  background_padding: true
+  add_boundary_fraction: 0.1
+  min_tublet_duration_s: 0.5
+
+# Step 10
+prepare_tracklets_for_cvat_annotation:
+  skip_existing: false
+  output_xml_folder_name: "cvat_tracklets_xml"
+  output_csv_filename: "cvat_tracklets_annotation.csv"
+  output_label_constructor_filename: "cvat_label_constructor.json" # paste into the CVAT raw label constructor
+
+# Correct tracks on CVAT and download the corrections from the bash scripts
+
+# Step 11
+process_tracklet_annotations_from_cvat:
+  input_xml_folder_name: "annotated_tracklets_xml"
+  output_json_folder_name: "annotated_trimmed_videos_json"
+  always_second_action:
+    - "vocalizing"
+    - "defecating"
+    - "urinating"
+  default_first_action: "standing_head_up"
+
+video_extensions:
+  - ".mp4"
+  - ".avi"
+  - ".mpeg"
+  - ".mpg"
+
+# Label classes of the three annotation categories. Current classes are for MammAlps-S2.
+labels:
+  species:
+    - "red_deer"
+    - "roe_deer"
+    - "fox"
+    - "wolf"
+    - "chamois"
+    - "hare"
+    - "other_small_mammal"
+    - "unknown"
+  activities:
+    - "foraging"
+    - "vigilance"
+    - "courtship"
+    - "unknown"
+    - "camera_reaction"
+    - "escaping"
+    - "chasing"
+    - "grooming"
+    - "playing"
+    - "resting"
+    - "marking"
+    - "fighting"
+    - "nursing"
+  actions:
+    - "walking"
+    - "standing_head_up"
+    - "standing_head_down"
+    - "grazing"
+    - "sniffing"
+    - "unknown"
+    - "looking_at_camera"
+    - "running"
+    - "scratching_body"
+    - "scratching_antlers"
+    - "scratching_hoof"
+    - "shaking_fur"
+    - "vocalizing"
+    - "bathing"
+    - "jumping"
+    - "drinking"
+    - "fighting"
+    - "laying"
+    - "defecating"
+    - "urinating"
+    - "browsing"
+    - "stretching"
+    - "falling"
+    - "suckling"
+    - "preparing_to_suckle"
+    - "carrying_prey"
